@@ -26,6 +26,26 @@ from app.models.user import Role
 
 app = create_app()
 
+def _maybe_auto_init_and_seed():
+    """
+    Render free tier doesn't support shell access, so optionally initialize + seed
+    the database at startup. Controlled by AUTO_INIT_DB=1.
+    """
+    if os.environ.get("AUTO_INIT_DB", "").strip() not in {"1", "true", "True", "YES", "yes"}:
+        return
+    with app.app_context():
+        db.create_all()
+        # Seed only once
+        if not User.query.filter_by(email="admin@epms.local").first():
+            try:
+                seed()
+            except Exception as e:
+                # Don't crash the server if seed fails; logs will show the error.
+                print(f"AUTO_INIT_DB seed failed: {e}")
+
+
+_maybe_auto_init_and_seed()
+
 
 @app.cli.command("init-db")
 def init_db():

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}1:1 Meetings{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">1:1 Meetings</h1>
+            <p class="page-subtitle">Schedule and view one-on-ones</p>
+        </div>
+        {% if current_user.is_manager() %}
+        <a href="{{ url_for('meetings.create') }}" class="btn btn-primary">Schedule meeting</a>
+        {% endif %}
+    </div>
+</div>
+<div class="table-wrap reveal">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>When</th>
+                <th>With</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in meetings %}
+            <tr>
+                <td>{{ m.scheduled_at.strftime('%b %d, %Y %H:%M') }}</td>
+                <td>{% if m.employee_id == current_user.id %}{{ m.manager.full_name }}{% else %}{{ m.employee.full_name }}{% endif %}</td>
+                <td>{{ m.title or '—' }}</td>
+                <td><span class="badge status-{{ m.status }}">{{ m.status }}</span></td>
+                <td>{% if m.manager_id == current_user.id %}<a href="{{ url_for('meetings.edit', meeting_id=m.id) }}" class="btn btn-ghost btn-sm">Edit</a>{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if not meetings %}
+<p class="text-muted reveal">No meetings scheduled.</p>
+{% endif %}
+{% endblock %}

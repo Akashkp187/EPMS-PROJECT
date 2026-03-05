@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}KPI{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">KPI Management</h1>
+            <p class="page-subtitle">Key performance indicators</p>
+        </div>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('kpi.create') }}" class="btn btn-primary">Add KPI</a>
+        {% endif %}
+    </div>
+</div>
+<div class="table-wrap reveal">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Unit</th>
+                <th>Department</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for k in kpis %}
+            <tr>
+                <td>{{ k.name }}</td>
+                <td>{{ k.unit or '—' }}</td>
+                <td>{{ k.department.name if k.department else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="reveal"><a href="{{ url_for('kpi.targets') }}" class="btn btn-secondary">My KPI targets</a></p>
+{% endblock %}

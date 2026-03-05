@@ -1,0 +1,32 @@
+# EPMS - Employee Performance Management System
+# Python 3.10+
+
+# Core
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Database
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+SQLAlchemy==2.0.23
+
+# Auth & Security
+Flask-Login==0.6.3
+email-validator>=2.1.0
+
+# API & Export
+Flask-RESTful==0.3.10
+openpyxl==3.1.2
+reportlab==4.0.7
+# weasyprint  # Optional: PDF export (install separately if needed)
+
+# Utilities
+python-dotenv==1.0.0
+marshmallow==3.20.1
+Pillow==10.1.0
+
+# WSGI server for production (Render)
+gunicorn
+
+# Dev (optional)
+# flask-debugtoolbar==0.14.1

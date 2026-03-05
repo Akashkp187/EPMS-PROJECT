@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">Page not found</h1>
+    <p class="page-subtitle">The page you’re looking for doesn’t exist or may have been moved.</p>
+</div>
+<div class="card card-detail reveal">
+    <h2 class="card-title">404 – Not found</h2>
+    <p class="text-muted">
+        We couldn’t find the resource you requested. Use the navigation above to get back to your dashboard
+        or browse employees, goals, and reviews.
+    </p>
+    <div class="mt-2">
+        <a href="{{ url_for('dashboard.home') }}" class="btn btn-primary">Back to dashboard</a>
+        <a href="{{ url_for('employees.index') }}" class="btn btn-secondary btn-sm">View employees</a>
+    </div>
+</div>
+{% endblock %}

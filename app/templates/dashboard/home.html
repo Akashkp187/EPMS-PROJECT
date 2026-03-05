@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Welcome back, {{ current_user.first_name }}. Here’s your performance at a glance.</p>
+    {% if is_high_performer %}
+    <p class="badge-high-performer">
+        <span class="badge-dot"></span>
+        High performer &mdash; consistently strong results
+    </p>
+    {% endif %}
+</div>
+
+<div class="dashboard-grid">
+    <section class="card stats-row reveal">
+        <h2 class="card-title">Quick stats</h2>
+        <div class="stat-cards">
+            <a href="{{ url_for('goals.index') }}" class="stat-card stat-card-link" data-tooltip="View and manage your goals">
+                <div class="stat-icon-wrap"><img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=120" alt="" class="stat-bg"></div>
+                <span class="stat-value" id="stat-goals" data-count="{{ goals|length }}">{{ goals|length }}</span>
+                <span class="stat-label">Active goals</span>
+                <span class="stat-detail">Click to open</span>
+            </a>
+            <div class="stat-card" data-tooltip="Reviews you're involved in">
+                <div class="stat-icon-wrap"><img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=120" alt="" class="stat-bg"></div>
+                <span class="stat-value" data-count="{{ reviews|length }}">{{ reviews|length }}</span>
+                <span class="stat-label">Reviews</span>
+                <span class="stat-detail">Recent period</span>
+            </div>
+            <a href="{{ url_for('meetings.index') }}" class="stat-card stat-card-link" data-tooltip="Your upcoming 1:1 meetings">
+                <div class="stat-icon-wrap"><img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=120" alt="" class="stat-bg"></div>
+                <span class="stat-value" data-count="{{ meetings|length }}">{{ meetings|length }}</span>
+                <span class="stat-label">Upcoming 1:1s</span>
+                <span class="stat-detail">Scheduled</span>
+            </a>
+            <a href="{{ url_for('notifications.index') }}" class="stat-card stat-card-link" data-tooltip="Unread notifications">
+                <div class="stat-icon-wrap"><img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=120" alt="" class="stat-bg"></div>
+                <span class="stat-value" id="stat-notif" data-count="{{ notifications|length }}">{{ notifications|length }}</span>
+                <span class="stat-label">Unread notifications</span>
+                <span class="stat-detail">Click to view</span>
+            </a>
+        </div>
+    </section>
+
+    <div class="dashboard-main">
+        <section class="card goals-panel reveal">
+            <div class="panel-header">
+                <h2 class="card-title">My goals</h2>
+                {% if current_user.is_manager() %}
+                <a href="{{ url_for('goals.create') }}" class="btn btn-primary btn-sm">Add goal</a>
+                {% endif %}
+            </div>
+            {% if goals %}
+            <ul class="goal-list">
+                {% for goal in goals %}
+                <li class="goal-item goal-item-interactive">
+                    <div class="goal-progress-bar" role="progressbar" aria-valuenow="{{ goal.progress }}" aria-valuemin="0" aria-valuemax="100"><span class="goal-progress-fill" style="width: {{ goal.progress }}%;"></span></div>
+                    <div class="goal-meta">
+                        {% if current_user.is_manager() %}
+                        <a href="{{ url_for('goals.edit', goal_id=goal.id) }}" class="goal-title">{{ goal.title }}</a>
+                        {% else %}
+                        <span class="goal-title">{{ goal.title }}</span>
+                        {% endif %}
+                        <span class="goal-progress-text">{{ goal.progress }}%</span>
+                    </div>
+                    <div class="goal-item-footer">
+                        {% if goal.target_date %}<span class="goal-due">Due {{ goal.target_date.strftime('%b %d') }}</span>{% endif %}
+                        <span class="goal-status status-{{ goal.status }}">{{ goal.status }}</span>
+                        {% if current_user.is_manager() %}
+                        <a href="{{ url_for('goals.edit', goal_id=goal.id) }}" class="goal-edit-link">Edit</a>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No goals yet. <a href="{{ url_for('goals.create') }}">Create your first goal</a>.</p>
+            {% endif %}
+        </section>
+
+        <section class="card chart-panel reveal">
+            <div class="panel-header trend-header">
+                <h2 class="card-title">Performance trend</h2>
+                <select id="trendPeriodSelect" class="form-control form-control-sm trend-period-select">
+                    <option value="quarter">Last quarter</option>
+                    <option value="year" selected>Last year</option>
+                    <option value="all">All time</option>
+                </select>
+            </div>
+            <div class="chart-placeholder">
+                <canvas id="trendChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+
+        <section class="card chart-panel reveal">
+            <h2 class="card-title">Goal completion rate</h2>
+            <div class="chart-placeholder">
+                <canvas id="goalCompletionChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+
+        <section class="card chart-panel reveal">
+            <h2 class="card-title">My rating distribution</h2>
+            <div class="chart-placeholder">
+                <canvas id="ratingDistributionChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+
+        <section class="card chart-panel reveal">
+            <h2 class="card-title">KPI progress comparison</h2>
+            <div class="chart-placeholder">
+                <canvas id="kpiProgressChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <aside class="dashboard-sidebar">
+        <section class="card reveal">
+            <h2 class="card-title">Quick actions</h2>
+            <div class="quick-actions">
+                {% if current_user.is_manager() %}
+                <a href="{{ url_for('goals.create') }}" class="quick-action" data-tooltip="Create a new performance goal">
+                    <span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+                    <span>New goal</span>
+                </a>
+                {% endif %}
+                <a href="{{ url_for('feedback.give') }}" class="quick-action" data-tooltip="Send 360° feedback to a colleague">
+                    <span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+                    <span>Give feedback</span>
+                </a>
+                <a href="{{ url_for('profile.edit') }}" class="quick-action" data-tooltip="Update your profile and avatar">
+                    <span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                    <span>Edit profile</span>
+                </a>
+                <a href="{{ url_for('notifications.index') }}" class="quick-action" data-tooltip="View all notifications">
+                    <span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+                    <span>Notifications</span>
+                </a>
+            </div>
+        </section>
+
+        <section class="card reveal">
+            <h2 class="card-title">Upcoming 1:1s</h2>
+            {% if meetings %}
+            <ul class="timeline-list meetings-detail">
+                {% for m in meetings %}
+                <li class="meeting-item">
+                    <span class="meeting-time">{{ m.scheduled_at.strftime('%b %d, %H:%M') }}</span>
+                    <span class="meeting-with">{% if m.employee_id == current_user.id %}with {{ m.manager.full_name }}{% else %}with {{ m.employee.full_name }}{% endif %}</span>
+                    {% if m.title %}<span class="meeting-title">{{ m.title }}</span>{% endif %}
+                    {% if m.agenda %}<p class="meeting-agenda text-muted">{{ m.agenda[:80] }}{% if m.agenda|length > 80 %}…{% endif %}</p>{% endif %}
+                    <span class="text-relative" data-time="{{ m.scheduled_at.isoformat() }}"><span class="time-relative">{{ m.scheduled_at.strftime('%b %d') }}</span></span>
+                    <a href="{{ url_for('meetings.index') }}" class="link-sm">View all</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No upcoming meetings. <a href="{{ url_for('meetings.index') }}">Schedule one</a></p>
+            {% endif %}
+        </section>
+
+        <section class="card reveal">
+            <h2 class="card-title">Recent notifications</h2>
+            {% if notifications %}
+            <ul class="notif-list">
+                {% for n in notifications %}
+                <li class="notif-item notif-item-detail">
+                    <span class="notif-type notif-{{ n.type }}" title="{{ n.type }}">{{ n.type }}</span>
+                    <div class="notif-body">
+                        <a href="{{ n.link or url_for('notifications.index') }}" class="notif-title">{{ n.title }}</a>
+                        {% if n.message %}<p class="notif-message text-muted">{{ n.message[:60] }}{% if n.message|length > 60 %}…{% endif %}</p>{% endif %}
+                        <span class="text-relative" data-time="{{ n.created_at.isoformat() }}"><span class="time-relative">{{ n.created_at.strftime('%b %d') }}</span></span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No new notifications.</p>
+            {% endif %}
+        </section>
+    </aside>
+</div>
+
+<div class="card activity-section reveal">
+    <h2 class="card-title">Activity timeline</h2>
+    <div class="timeline">
+        {% for r in reviews[:5] %}
+        <div class="timeline-item timeline-item-detail">
+            <div class="timeline-marker timeline-marker-review"></div>
+            <div class="timeline-content">
+                <span class="timeline-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                <strong>Review</strong> {{ r.period_start.strftime('%b %Y') }} – {{ r.period_end.strftime('%b %Y') }}
+                <span class="badge status-{{ r.status }}">{{ r.status }}</span>
+                {% if r.rating %}<span class="timeline-rating">Rating: {{ r.rating }}/5</span>{% endif %}
+                <a href="{{ url_for('reviews.view', review_id=r.id) }}" class="link-sm">View</a>
+            </div>
+        </div>
+        {% endfor %}
+        {% if not reviews %}
+        <p class="text-muted">No recent activity.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+.stats-row { grid-column: 1 / -1; }
+.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat-card { position: relative; padding: 20px; border-radius: var(--radius); background: var(--glass); border: 1px solid var(--surface-border); overflow: hidden; text-decoration: none; color: inherit; display: block; }
+.stat-card-link:hover .stat-detail { opacity: 1; }
+.stat-icon-wrap { position: absolute; inset: 0; opacity: 0.15; }
+.stat-icon-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.stat-value { display: block; font-size: 1.75rem; font-weight: 700; color: var(--accent); position: relative; }
+.stat-label { font-size: 0.85rem; color: var(--text-muted); position: relative; }
+.stat-detail { font-size: 0.75rem; color: var(--text-muted); position: relative; opacity: 0.8; transition: opacity 0.2s ease; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.goal-list { list-style: none; padding: 0; margin: 0; }
+.goal-item { padding: 12px 0; border-bottom: 1px solid var(--surface-border); display: grid; gap: 6px; align-items: center; transition: background 0.2s ease; }
+.goal-item-interactive:hover { background: var(--glass); margin: 0 -12px; padding-left: 12px; padding-right: 12px; border-radius: var(--radius-sm); }
+.goal-item:last-child { border-bottom: none; }
+.goal-progress-bar { height: 6px; background: var(--surface-border); border-radius: 3px; overflow: hidden; }
+.goal-progress-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); border-radius: 3px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.goal-meta { display: flex; justify-content: space-between; align-items: center; }
+.goal-title { color: var(--text); text-decoration: none; font-weight: 500; }
+.goal-title:hover { color: var(--accent); }
+.goal-item-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.85rem; }
+.goal-due { color: var(--text-muted); }
+.goal-edit-link { font-size: 0.85rem; color: var(--accent); text-decoration: none; opacity: 0; transition: opacity 0.2s ease; }
+.goal-item-interactive:hover .goal-edit-link { opacity: 1; }
+.goal-status { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; background: var(--glass); }
+.status-completed { color: var(--success); }
+.status-active { color: var(--accent); }
+.status-cancelled { color: var(--text-muted); }
+.quick-actions { display: flex; flex-direction: column; gap: 8px; }
+.quick-action { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); color: var(--text); text-decoration: none; transition: background var(--transition); }
+.quick-action:hover { background: var(--glass); }
+.qa-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--accent); }
+.qa-icon svg { width: 22px; height: 22px; }
+.timeline-list, .notif-list { list-style: none; padding: 0; margin: 0; }
+.timeline-list li { padding: 10px 0; border-bottom: 1px solid var(--surface-border); font-size: 0.9rem; }
+.meetings-detail .meeting-item { display: flex; flex-direction: column; gap: 4px; }
+.meeting-time { font-weight: 600; }
+.meeting-with { color: var(--text-muted); font-size: 0.9rem; }
+.meeting-title { font-size: 0.85rem; display: block; }
+.meeting-agenda { font-size: 0.8rem; margin: 4px 0 0; line-height: 1.4; }
+.notif-item { padding: 10px 0; border-bottom: 1px solid var(--surface-border); font-size: 0.9rem; }
+.notif-item-detail { display: flex; align-items: flex-start; gap: 12px; }
+.notif-body { flex: 1; min-width: 0; }
+.notif-title { color: var(--text); text-decoration: none; font-weight: 500; }
+.notif-title:hover { color: var(--accent); }
+.notif-message { font-size: 0.85rem; margin: 2px 0 4px; }
+.notif-type { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; flex-shrink: 0; }
+.notif-recognition { background: var(--success); color: #fff; }
+.notif-success { background: var(--success); color: #fff; }
+.notif-info { background: var(--accent); color: #fff; }
+.notif-warning { background: var(--warning); color: #fff; }
+.timeline { padding-left: 24px; border-left: 2px solid var(--surface-border); margin-left: 8px; }
+.timeline-item { position: relative; padding-bottom: 16px; }
+.timeline-item-detail .timeline-content { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.timeline-marker { position: absolute; left: -32px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.timeline-marker-review { background: var(--accent); }
+.timeline-icon { color: var(--text-muted); display: inline-flex; }
+.timeline-rating { font-size: 0.85rem; color: var(--text-muted); }
+.timeline-content { font-size: 0.9rem; }
+.activity-section { margin-top: 24px; }
+.chart-placeholder { min-height: 200px; }
+.link-sm { font-size: 0.85rem; color: var(--accent); text-decoration: none; }
+.link-sm:hover { text-decoration: underline; }
+.goals-panel + .chart-panel { margin-top: 16px; }
+.dashboard-main .chart-panel + .chart-panel { margin-top: 16px; }
+.chart-placeholder canvas { width: 100% !important; height: 220px !important; }
+.badge-high-performer {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--success);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25);
+}
+.trend-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.trend-period-select { max-width: 160px; }
+.dashboard-sidebar .card + .card { margin-top: 24px; }
+@media (max-width: 1100px) { .dashboard-grid { grid-template-columns: 1fr; } .stat-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .stat-cards { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    gsap.fromTo('.reveal', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' });
+
+    var trendCtx = document.getElementById('trendChart');
+    var trendPeriodSelect = document.getElementById('trendPeriodSelect');
+    var trendChartInstance = null;
+
+    function renderTrendChart(period) {
+        if (!trendCtx) return;
+        fetch('/api/dashboard/performance-trend?period=' + encodeURIComponent(period || 'year'))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.labels || data.labels.length === 0) {
+                    trendCtx.parentElement.innerHTML = '<p class="text-muted">Not enough data yet to show a performance trend.</p>';
+                    return;
+                }
+                if (trendChartInstance) {
+                    trendChartInstance.destroy();
+                }
+                trendChartInstance = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Performance score',
+                            data: data.values,
+                            borderColor: 'rgb(14, 165, 233)',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                min: 0,
+                                max: 100,
+                                grid: { color: 'rgba(0,0,0,0.06)' },
+                                ticks: {
+                                    callback: function (value) { return value + '%'; }
+                                }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            })
+            .catch(function () {
+                trendCtx.parentElement.innerHTML = '<p class="text-muted">Performance trend unavailable.</p>';
+            });
+    }
+
+    if (trendCtx) {
+        var initialPeriod = (trendPeriodSelect && trendPeriodSelect.value) || 'year';
+        renderTrendChart(initialPeriod);
+        if (trendPeriodSelect) {
+            trendPeriodSelect.addEventListener('change', function () {
+                renderTrendChart(trendPeriodSelect.value || 'year');
+            });
+        }
+    }
+
+    // Goal completion rate (doughnut)
+    var goalCtx = document.getElementById('goalCompletionChart');
+    if (goalCtx) {
+        fetch('/api/dashboard/goal-completion')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.labels || !data.counts || data.total_goals === 0) {
+                    goalCtx.parentElement.innerHTML = '<p class="text-muted">No goal data yet.</p>';
+                    return;
+                }
+                new Chart(goalCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.counts,
+                            backgroundColor: [
+                                'rgba(16, 185, 129, 0.8)',   // completed
+                                'rgba(59, 130, 246, 0.8)',   // active
+                                'rgba(148, 163, 184, 0.8)'   // cancelled
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12 } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (ctx) {
+                                        var value = ctx.parsed;
+                                        var total = data.total_goals || 1;
+                                        var pct = ((value / total) * 100).toFixed(1);
+                                        return ctx.label + ': ' + value + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '60%'
+                    }
+                });
+            })
+            .catch(function () {
+                goalCtx.parentElement.innerHTML = '<p class="text-muted">Goal analytics unavailable.</p>';
+            });
+    }
+
+    // Employee rating distribution (bar)
+    var ratingCtx = document.getElementById('ratingDistributionChart');
+    if (ratingCtx) {
+        fetch('/api/dashboard/rating-distribution')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.labels || !data.counts || data.counts.every(function (c) { return c === 0; })) {
+                    ratingCtx.parentElement.innerHTML = '<p class="text-muted">No review ratings yet.</p>';
+                    return;
+                }
+                var ratingBarColors = ['rgba(239, 68, 68, 0.85)', 'rgba(249, 115, 22, 0.85)', 'rgba(234, 179, 8, 0.85)', 'rgba(34, 197, 94, 0.85)', 'rgba(16, 185, 129, 0.9)'];
+                new Chart(ratingCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Reviews',
+                            data: data.counts,
+                            backgroundColor: ratingBarColors,
+                            borderColor: ['#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#059669'],
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            barThickness: 32
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function () {
+                                        if (data.average_rating != null) {
+                                            return 'Avg rating: ' + data.average_rating.toFixed(1);
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Rating' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(function () {
+                ratingCtx.parentElement.innerHTML = '<p class="text-muted">Rating analytics unavailable.</p>';
+            });
+    }
+
+    // KPI progress comparison (bar) – per KPI achievement %
+    var kpiCtx = document.getElementById('kpiProgressChart');
+    if (kpiCtx) {
+        fetch('/api/dashboard/kpi-progress')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.labels || !data.values || data.labels.length === 0) {
+                    kpiCtx.parentElement.innerHTML = '<p class="text-muted">No KPI targets set yet.</p>';
+                    return;
+                }
+                var kpiBarColors = ['rgba(14, 165, 233, 0.9)', 'rgba(16, 185, 129, 0.9)', 'rgba(139, 92, 246, 0.9)', 'rgba(245, 158, 11, 0.9)', 'rgba(236, 72, 153, 0.9)', 'rgba(20, 184, 166, 0.9)'];
+                var kpiColors = data.labels.map(function (_, i) { return kpiBarColors[i % kpiBarColors.length]; });
+                new Chart(kpiCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Achievement %',
+                            data: data.values,
+                            backgroundColor: kpiColors,
+                            borderRadius: 6,
+                            barThickness: 32
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (ctx) {
+                                        return ctx.parsed.y + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 120,
+                                ticks: {
+                                    callback: function (value) { return value + '%'; }
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(function () {
+                kpiCtx.parentElement.innerHTML = '<p class="text-muted">KPI analytics unavailable.</p>';
+            });
+    }
+});
+</script>
+{% endblock %}

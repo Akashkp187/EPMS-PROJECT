@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ user.full_name }}{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div class="flex align-center gap-3">
+            {% if user.id in overall_top_3_ids %}
+            <span class="avatar-overall-top-wrap avatar-lg-wrap rank-{{ overall_top_3_ids.index(user.id) + 1 }}">
+            {% endif %}
+            {% if user.avatar_url %}
+            <img src="{{ url_for('static', filename=user.avatar_url) }}" alt="" class="avatar-lg">
+            {% else %}
+            <span class="avatar-placeholder avatar-lg">{{ (user.first_name[0] + user.last_name[0])|upper }}</span>
+            {% endif %}
+            {% if user.id in overall_top_3_ids %}
+            </span>
+            {% endif %}
+            <div>
+                <h1 class="page-title" style="margin:0;">{{ user.full_name }}</h1>
+                <p class="page-subtitle" style="margin:0;">{{ user.job_title or 'Employee' }} · {{ user.department.name if user.department else '—' }}</p>
+            </div>
+        </div>
+        {% if current_user.id == user.id %}
+        <a href="{{ url_for('profile.edit') }}" class="btn btn-primary">Edit profile</a>
+        {% elif current_user.can_manage_user(user) %}
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('employees.edit', user_id=user.id) }}" class="btn btn-primary">Edit member</a>
+            <a href="{{ url_for('goals.index', user_id=user.id) }}" class="btn btn-secondary">View goals</a>
+            <a href="{{ url_for('employees.export_employee_performance_excel', user_id=user.id) }}" class="btn btn-secondary btn-sm btn-export-excel" data-tooltip="Download Excel report">
+                Export Excel
+            </a>
+            <a href="{{ url_for('employees.export_employee_performance_pdf', user_id=user.id) }}" class="btn btn-secondary btn-sm btn-export-pdf" data-tooltip="Download PDF report">
+                Export PDF
+            </a>
+            {% if user.is_active and user.id != current_user.id %}
+            <form method="post" action="{{ url_for('employees.delete', user_id=user.id) }}" style="display:inline;" data-confirm="Deactivate this member? They will no longer be able to sign in.">
+                <button type="submit" class="btn btn-ghost btn-danger">Deactivate</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+<div class="profile-grid reveal">
+    <section class="card card-detail">
+        <h2 class="card-title">Contact</h2>
+        <ul class="detail-list">
+            <li><span class="detail-label">Email</span><a href="mailto:{{ user.email }}">{{ user.email }}</a></li>
+            <li><span class="detail-label">Phone</span><span>{{ user.phone or '—' }}</span></li>
+            <li><span class="detail-label">Role</span><span class="badge badge-{{ user.role }}">{% if user.role == 'admin' %}Administrator{% elif user.role == 'manager' %}Manager{% else %}Employee{% endif %}</span></li>
+            {% if user.job_title %}<li><span class="detail-label">Job title</span><span>{{ user.job_title }}</span></li>{% endif %}
+        </ul>
+    </section>
+    {% if recognitions %}
+    <section class="card card-detail">
+        <h2 class="card-title">Badges &amp; recognition</h2>
+        <ul class="badges-list">
+            {% for rec in recognitions %}
+            <li class="badge-item">
+                <span class="badge-pill badge-{{ rec.badge or 'default' }}">
+                    {% if rec.badge == 'top_performer' %}Top Performer{% elif rec.badge == 'high_performer' %}High Performer{% elif rec.badge == 'overall_top_performer' %}Organization Top Performer{% else %}{{ rec.badge or 'Recognition' }}{% endif %}
+                </span>
+                {% if rec.message %}<span class="badge-message text-muted">{{ rec.message[:80] }}{% if rec.message|length > 80 %}…{% endif %}</span>{% endif %}
+                <span class="badge-date text-muted">{{ rec.created_at.strftime('%b %Y') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+    {% if user.manager %}
+    <section class="card card-detail">
+        <h2 class="card-title">Manager</h2>
+        <div class="manager-block">
+            <a href="{{ url_for('employees.view', user_id=user.manager.id) }}" class="flex align-center gap-2 manager-link">
+                {% if user.manager.avatar_url %}
+                <img src="{{ url_for('static', filename=user.manager.avatar_url) }}" alt="" class="avatar-sm">
+                {% else %}
+                <span class="avatar-placeholder">{{ (user.manager.first_name[0] + user.manager.last_name[0])|upper }}</span>
+                {% endif %}
+                <span>{{ user.manager.full_name }}</span>
+                {% if user.manager.job_title %}<span class="text-muted">· {{ user.manager.job_title }}</span>{% endif %}
+            </a>
+        </div>
+    </section>
+    {% endif %}
+    <section class="card card-detail">
+        <h2 class="card-title">Goals</h2>
+        <p class="text-muted">{% if user.goals.count() %}{{ user.goals.count() }} goal(s){% else %}No goals yet.{% endif %}</p>
+        <a href="{{ url_for('goals.index', user_id=user.id) }}" class="btn btn-secondary btn-sm">View goals</a>
+    </section>
+    {% if user.last_login and (current_user.id == user.id or current_user.can_manage_user(user)) %}
+    <section class="card card-detail">
+        <h2 class="card-title">Activity</h2>
+        <p class="text-muted">Last login: <span data-time="{{ user.last_login.isoformat() }}"><span class="time-relative">{{ user.last_login.strftime('%b %d, %Y %H:%M') }}</span></span></p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.avatar-lg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.avatar-placeholder.avatar-lg { width: 80px; height: 80px; font-size: 1.5rem; }
+.profile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.detail-list { list-style: none; padding: 0; margin: 0; }
+.detail-list li { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--surface-border); }
+.detail-list li:last-child { border-bottom: none; }
+.detail-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.detail-list a { color: var(--accent); text-decoration: none; }
+.detail-list a:hover { text-decoration: underline; }
+.manager-block { padding: 4px 0; }
+.manager-link { text-decoration: none; color: var(--text); padding: 8px 0; display: inline-flex; align-items: center; gap: 10px; border-radius: var(--radius-sm); transition: background 0.2s ease; }
+.manager-link:hover { background: var(--glass); color: var(--accent); }
+.badges-list { list-style: none; padding: 0; margin: 0; }
+.badge-item { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--surface-border); }
+.badge-item:last-child { border-bottom: none; }
+.badge-pill { display: inline-block; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; width: fit-content; font-weight: 500; }
+.badge-top-performer { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+.badge-high_performer { background: rgba(14, 165, 233, 0.15); color: var(--accent); }
+.badge-default { background: var(--glass); color: var(--text-muted); }
+.badge-message { font-size: 0.85rem; }
+.badge-date { font-size: 0.8rem; }
+</style>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Review{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Review: {{ review.user.full_name }}</h1>
+            <p class="page-subtitle">{{ review.period_start.strftime('%b %d, %Y') }} – {{ review.period_end.strftime('%b %d, %Y') }}</p>
+        </div>
+        {% if current_user.id == review.reviewer_id %}
+        <div class="flex gap-2">
+            <a href="{{ url_for('reviews.edit', review_id=review.id) }}" class="btn btn-primary">Edit review</a>
+            <form method="post" action="{{ url_for('reviews.delete', review_id=review.id) }}" data-confirm="Delete this review? This cannot be undone.">
+                <button type="submit" class="btn btn-secondary btn-danger">Delete</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<div class="card reveal">
+    <p><strong>Reviewer</strong> {{ review.reviewer.full_name }}</p>
+    <p><strong>Rating</strong> {% if review.rating %}{{ review.rating }}/5{% else %}—{% endif %}</p>
+    <p><strong>Status</strong> {{ review.status }}</p>
+    {% if review.summary %}
+    <h3 class="card-title">Summary</h3>
+    <p>{{ review.summary }}</p>
+    {% endif %}
+    {% if review.strengths %}
+    <h3 class="card-title">Strengths</h3>
+    <p>{{ review.strengths }}</p>
+    {% endif %}
+    {% if review.improvements %}
+    <h3 class="card-title">Areas for improvement</h3>
+    <p>{{ review.improvements }}</p>
+    {% endif %}
+</div>
+{% endblock %}

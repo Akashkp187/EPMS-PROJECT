@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}My KPI Targets{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">My KPI targets</h1>
+    <p class="page-subtitle">Your assigned KPI targets</p>
+</div>
+<div class="table-wrap reveal">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>KPI</th>
+                <th>Period</th>
+                <th>Target</th>
+                <th>Actual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in targets %}
+            <tr>
+                <td>{{ t.kpi.name }}</td>
+                <td>{{ t.period_start.strftime('%b %Y') }} - {{ t.period_end.strftime('%b %Y') }}</td>
+                <td>{{ t.target_value }} {{ t.kpi.unit or '' }}</td>
+                <td>{{ t.actual_value if t.actual_value is not none else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if not targets %}
+<p class="text-muted reveal">No KPI targets assigned.</p>
+{% endif %}
+<a href="{{ url_for('kpi.index') }}" class="btn btn-secondary btn-sm mt-2">Back to KPI</a>
+{% endblock %}

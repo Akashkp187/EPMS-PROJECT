@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block title %}Top Performers{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Top Performers</h1>
+            <p class="page-subtitle">Celebrating top performers at organization and department level. Get inspired and motivated.</p>
+        </div>
+        <form method="get" class="recognition-filter-form flex flex-wrap gap-2 align-center">
+            <label for="period-select" class="sr-only">Period</label>
+            <select id="period-select" name="period" class="form-control" onchange="this.form.submit()">
+                <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>Quarterly</option>
+                <option value="year" {% if period == 'year' %}selected{% endif %}>Yearly</option>
+            </select>
+            {% if departments|length > 1 %}
+            <label for="dept-select" class="sr-only">Department</label>
+            <select id="dept-select" name="department" class="form-control" onchange="this.form.submit()">
+                <option value="">All departments</option>
+                {% for d in departments %}
+                <option value="{{ d.id }}" {% if selected_department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Overall Organization Top 3 - bright hero section with unique ring design + celebration effect -->
+{% if overall_top_3 %}
+<section class="overall-top-section card reveal overall-top-celebration-wrap">
+    <div class="celebration-blast" aria-hidden="true">
+        {% for i in range(28) %}
+        <span class="celebration-particle particle-{{ i % 7 }}" style="--i: {{ i }}; --angle: {{ (i * 13) % 360 }}deg;"></span>
+        {% endfor %}
+    </div>
+    <div class="celebration-firework" aria-hidden="true">
+        {% for j in range(36) %}
+        <span class="firework-dot" style="--j: {{ j }}; --angle: {{ j * 10 }}deg;"></span>
+        {% endfor %}
+    </div>
+    <div class="celebration-firework celebration-firework-inner" aria-hidden="true">
+        {% for k in range(24) %}
+        <span class="firework-dot firework-dot-inner" style="--j: {{ k }}; --angle: {{ k * 15 }}deg;"></span>
+        {% endfor %}
+    </div>
+    <h2 class="overall-top-heading">
+        <span class="overall-top-icon" aria-hidden="true">🏆</span>
+        Organization Top 3 Performers
+    </h2>
+    <p class="overall-top-sub">The highest-performing employees across the entire organization this period.</p>
+    <div class="overall-top-cards">
+        {% for user, score in overall_top_3 %}
+        <a href="{{ url_for('employees.view', user_id=user.id) }}" class="overall-top-card overall-top-rank-{{ loop.index }}">
+            <span class="overall-top-avatar-wrap overall-top-avatar-rank-{{ loop.index }}">
+                <span class="overall-top-ring overall-top-ring-outer"></span>
+                <span class="overall-top-ring overall-top-ring-inner"></span>
+                {% if user.avatar_url %}
+                <img src="{{ url_for('static', filename=user.avatar_url) }}" alt="" class="overall-top-avatar">
+                {% else %}
+                <span class="avatar-placeholder overall-top-avatar">{{ (user.first_name[0] + user.last_name[0])|upper }}</span>
+                {% endif %}
+                <span class="overall-top-rank-badge">#{{ loop.index }}</span>
+            </span>
+            <span class="overall-top-dept-name">{{ user.department.name if user.department else '—' }}</span>
+            <div class="overall-top-card-body">
+                <span class="overall-top-name">{{ user.full_name }}</span>
+                <span class="overall-top-role">{{ user.job_title or 'Employee' }}</span>
+                <span class="overall-top-score">{{ "%.0f"|format(score) }}/100</span>
+                <span class="badge-pill badge-overall-top">{{ overall_badge_title }}</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<div class="recognition-intro card reveal">
+    <p class="recognition-intro-text">Below are top performers in each department based on goals, reviews, and key performance results. They have earned the <strong>{{ badge_title }}</strong> badge for the current period.</p>
+</div>
+
+<div class="top-performers-grid reveal">
+    {% for dept, performers in dept_list %}
+    <section class="card top-performers-card">
+        <h2 class="card-title top-performers-dept-title">{{ dept.name }}</h2>
+        <p class="text-muted top-performers-dept-sub">Top 3 performers</p>
+        <ul class="top-performers-list">
+            {% for user, score in performers %}
+            <li class="top-performer-item top-performer-rank-{{ loop.index }}">
+                <a href="{{ url_for('employees.view', user_id=user.id) }}" class="top-performer-link">
+                    <span class="top-performer-avatar-wrap top-performer-avatar-rank-{{ loop.index }}">
+                        {% if user.avatar_url %}
+                        <img src="{{ url_for('static', filename=user.avatar_url) }}" alt="" class="avatar-md">
+                        {% else %}
+                        <span class="avatar-placeholder avatar-md">{{ (user.first_name[0] + user.last_name[0])|upper }}</span>
+                        {% endif %}
+                    </span>
+                    <div class="top-performer-info">
+                        <span class="top-performer-name">{{ user.full_name }}</span>
+                        <span class="top-performer-role">{{ user.job_title or 'Employee' }}</span>
+                        <span class="top-performer-score">Score: {{ "%.0f"|format(score) }}/100</span>
+                        <span class="badge-pill badge-top-performer">{{ badge_title }}</span>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endfor %}
+</div>
+
+{% if not dept_list %}
+<p class="text-muted reveal">No performance data yet for the selected department(s). Complete goals, reviews, and KPI targets to see rankings.</p>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.recognition-filter-form { display: inline-flex; }
+.recognition-filter-form .form-control { min-width: 200px; }
+.recognition-intro { margin-bottom: 24px; padding: 16px 20px; }
+.recognition-intro-text { margin: 0; font-size: 0.95rem; color: var(--text); }
+.top-performers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+.top-performers-card { padding: 20px; }
+.top-performers-dept-title { margin-bottom: 4px; }
+.top-performers-dept-sub { margin: 0 0 16px; font-size: 0.85rem; }
+.top-performers-list { list-style: none; padding: 0; margin: 0; }
+.top-performer-item { margin-bottom: 12px; }
+.top-performer-item:last-child { margin-bottom: 0; }
+.top-performer-link {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px; border-radius: var(--radius-sm);
+    text-decoration: none; color: var(--text);
+    border: 1px solid var(--surface-border);
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.top-performer-link:hover { background: var(--glass); border-color: var(--accent); }
+.avatar-md { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+.avatar-placeholder.avatar-md { width: 48px; height: 48px; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; }
+.top-performer-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.top-performer-name { font-weight: 600; color: var(--text); }
+.top-performer-role { font-size: 0.85rem; color: var(--text-muted); }
+.top-performer-score { font-size: 0.8rem; color: var(--accent); font-weight: 500; }
+.badge-pill { display: inline-block; margin-top: 4px; font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; width: fit-content; }
+.badge-top-performer { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(14, 165, 233, 0.2)); color: var(--success); font-weight: 500; }
+/* Top 3 profile circle – unique ring/glow by rank */
+.top-performer-avatar-wrap {
+    position: relative; display: inline-flex; flex-shrink: 0;
+    padding: 3px; border-radius: 50%; overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.top-performer-link:hover .top-performer-avatar-wrap { transform: scale(1.05); }
+.top-performer-avatar-wrap .avatar-md,
+.top-performer-avatar-wrap .avatar-placeholder.avatar-md { display: block; margin: 0; border-radius: 50%; }
+.top-performer-avatar-rank-1 {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 0 2px #f59e0b, 0 4px 14px rgba(245, 158, 11, 0.45);
+}
+.top-performer-avatar-rank-2 {
+    background: linear-gradient(135deg, #94a3b8, #cbd5e1);
+    box-shadow: 0 0 0 2px #64748b, 0 4px 12px rgba(100, 116, 139, 0.35);
+}
+.top-performer-avatar-rank-3 {
+    background: linear-gradient(135deg, #b45309, #d97706);
+    box-shadow: 0 0 0 2px #b45309, 0 4px 12px rgba(180, 83, 9, 0.4);
+}
+/* Overall Top 3 – bright, beautiful hero with unique ring design + paper blast / firework */
+.overall-top-section {
+    padding: 32px 28px; margin-bottom: 32px;
+    background: linear-gradient(145deg, #fef9c3 0%, #fef3c7 25%, #fde68a 50%, #fcd34d 75%, #fbbf24 100%);
+    border: none; border-radius: var(--radius-lg);
+    box-shadow: 0 20px 50px rgba(251, 191, 36, 0.35), 0 0 0 1px rgba(245, 158, 11, 0.2);
+    position: relative;
+    overflow: visible;
+    transition: none;
+}
+.overall-top-section:hover { transform: none; box-shadow: 0 20px 50px rgba(251, 191, 36, 0.35), 0 0 0 1px rgba(245, 158, 11, 0.2); }
+.overall-top-celebration-wrap .overall-top-heading,
+.overall-top-celebration-wrap .overall-top-sub,
+.overall-top-celebration-wrap .overall-top-cards { position: relative; z-index: 2; }
+
+/* Paper blast / confetti container */
+.celebration-blast {
+    position: absolute;
+    left: 50%; top: 35%;
+    width: 0; height: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+.celebration-particle {
+    position: absolute;
+    left: 0; top: 0;
+    width: 8px; height: 10px;
+    border-radius: 1px;
+    opacity: 0;
+    animation: paper-blast 2.2s ease-out forwards;
+    animation-delay: calc(var(--i) * 0.04s);
+    transform-origin: 0 0;
+}
+.celebration-particle.particle-0 { background: #fef3c7; box-shadow: 0 0 4px rgba(254, 243, 199, 0.8); }
+.celebration-particle.particle-1 { background: #fde68a; box-shadow: 0 0 4px rgba(253, 230, 138, 0.8); }
+.celebration-particle.particle-2 { background: #fcd34d; box-shadow: 0 0 4px rgba(252, 211, 77, 0.8); }
+.celebration-particle.particle-3 { background: #fbbf24; box-shadow: 0 0 4px rgba(251, 191, 36, 0.8); }
+.celebration-particle.particle-4 { background: #f59e0b; box-shadow: 0 0 4px rgba(245, 158, 11, 0.8); }
+.celebration-particle.particle-5 { background: rgba(255,255,255,0.95); box-shadow: 0 0 4px rgba(255,255,255,0.6); }
+.celebration-particle.particle-6 { background: #fef9c3; box-shadow: 0 0 4px rgba(254, 249, 195, 0.8); }
+.celebration-particle:nth-child(odd) { width: 6px; height: 8px; }
+.celebration-particle:nth-child(3n) { border-radius: 50%; width: 6px; height: 6px; }
+@keyframes paper-blast {
+    0% {
+        opacity: 1;
+        transform: rotate(var(--angle)) translate(0, 0) rotate(0deg) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(var(--angle)) translate(85px, 50px) rotate(720deg) scale(0.3);
+    }
+}
+
+/* Firework sparkles (radiating dots) – stronger, more visible */
+.celebration-firework {
+    position: absolute;
+    left: 50%; top: 35%;
+    width: 0; height: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+.celebration-firework-inner { top: 38%; }
+.firework-dot {
+    position: absolute;
+    left: 0; top: 0;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fff 0%, #fef08a 25%, #fcd34d 50%, #f59e0b 80%, transparent 100%);
+    box-shadow: 0 0 20px #fbbf24, 0 0 12px #fde68a, 0 0 8px rgba(255,255,255,0.9);
+    opacity: 0;
+    animation: firework-burst 2.4s ease-out forwards;
+    animation-delay: calc(var(--j) * 0.02s);
+    transform-origin: 0 0;
+}
+.firework-dot-inner {
+    width: 8px; height: 8px;
+    box-shadow: 0 0 14px #fbbf24, 0 0 8px rgba(255,255,255,0.8);
+    animation-duration: 2s;
+    animation-delay: calc(0.15s + var(--j) * 0.02s);
+}
+@keyframes firework-burst {
+    0% {
+        opacity: 0;
+        transform: rotate(var(--angle)) translate(0, 0) scale(0.2);
+    }
+    15% { opacity: 1; }
+    50% {
+        opacity: 1;
+        transform: rotate(var(--angle)) translate(55px, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(var(--angle)) translate(140px, 0) scale(0.3);
+    }
+}
+[data-theme="dark"] .overall-top-section {
+    background: linear-gradient(145deg, #422006 0%, #78350f 30%, #92400e 60%, #b45309 100%);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 0 0 1px rgba(251, 191, 36, 0.25);
+}
+.overall-top-heading { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; font-size: 1.5rem; font-weight: 800; color: #1c1917; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
+[data-theme="dark"] .overall-top-heading { color: #fef3c7; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.overall-top-icon { font-size: 1.75rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+.overall-top-sub { margin: 0 0 28px; font-size: 0.95rem; color: #57534e; font-weight: 500; }
+[data-theme="dark"] .overall-top-sub { color: #fde68a; }
+.overall-top-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+@media (max-width: 768px) { .overall-top-cards { grid-template-columns: 1fr; } }
+.overall-top-card {
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 28px 20px;
+    background: rgba(255, 248, 220, 0.98);
+    border-radius: var(--radius-lg);
+    border: 2px solid rgba(245, 158, 11, 0.55);
+    text-decoration: none; color: var(--text);
+    transition: none;
+    box-shadow: 0 8px 24px rgba(180, 83, 9, 0.12);
+}
+/* Completely static – no hover transition, always gold */
+.overall-top-card:hover,
+.overall-top-card:focus {
+    transform: none !important;
+    box-shadow: 0 8px 24px rgba(180, 83, 9, 0.12) !important;
+    border-color: rgba(245, 158, 11, 0.55) !important;
+    background: rgba(255, 248, 220, 0.98) !important;
+}
+[data-theme="dark"] .overall-top-card {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: rgba(251, 191, 36, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+[data-theme="dark"] .overall-top-card:hover,
+[data-theme="dark"] .overall-top-card:focus {
+    background: rgba(30, 41, 59, 0.92) !important;
+    border-color: rgba(251, 191, 36, 0.45) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+}
+.overall-top-avatar-wrap {
+    position: relative; flex-shrink: 0; width: 88px; height: 88px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: none;
+}
+.overall-top-card:hover .overall-top-avatar-wrap,
+.overall-top-card:focus .overall-top-avatar-wrap { transform: none !important; }
+.overall-top-ring {
+    position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+    animation: overall-top-pulse 2.5s ease-in-out infinite;
+}
+.overall-top-ring-outer { border: 3px solid rgba(245, 158, 11, 0.5); opacity: 0.8; }
+.overall-top-ring-inner { inset: -3px; border: 2px dashed rgba(251, 191, 36, 0.7); animation-delay: 0.5s; }
+@keyframes overall-top-pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 0.4; } }
+.overall-top-avatar, .avatar-placeholder.overall-top-avatar {
+    position: relative; z-index: 1; width: 72px; height: 72px; border-radius: 50%;
+    object-fit: cover; display: block; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.avatar-placeholder.overall-top-avatar { font-size: 1.5rem; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0ea5e9, #8b5cf6); color: #fff; }
+.overall-top-rank-badge {
+    position: absolute; bottom: -2px; right: -2px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800;
+    color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.overall-top-avatar-rank-1 .overall-top-ring-outer { border-color: rgba(234, 179, 8, 0.8); }
+.overall-top-avatar-rank-1 .overall-top-rank-badge { background: linear-gradient(135deg, #eab308, #f59e0b); }
+.overall-top-avatar-rank-2 .overall-top-ring-outer { border-color: rgba(148, 163, 184, 0.8); }
+.overall-top-avatar-rank-2 .overall-top-rank-badge { background: linear-gradient(135deg, #64748b, #475569); }
+.overall-top-avatar-rank-3 .overall-top-ring-outer { border-color: rgba(180, 83, 9, 0.8); }
+.overall-top-avatar-rank-3 .overall-top-rank-badge { background: linear-gradient(135deg, #b45309, #92400e); }
+.overall-top-dept-name {
+    font-size: 0.8rem; font-weight: 600; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em;
+    margin-top: 4px;
+}
+[data-theme="dark"] .overall-top-dept-name { color: #fcd34d; }
+.overall-top-card-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.overall-top-name { font-weight: 700; font-size: 1.15rem; color: var(--text); }
+.overall-top-role { font-size: 0.85rem; color: var(--text-muted); }
+.overall-top-score { font-size: 1.05rem; font-weight: 700; color: #0ea5e9; }
+.badge-overall-top { background: linear-gradient(135deg, rgba(234, 179, 8, 0.35), rgba(245, 158, 11, 0.3)); color: #b45309; font-weight: 700; margin-top: 8px; padding: 4px 12px; }
+[data-theme="dark"] .badge-overall-top { color: #fcd34d; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+</style>
+{% endblock %}

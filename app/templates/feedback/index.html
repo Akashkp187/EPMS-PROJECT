@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Feedback{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">360° Feedback</h1>
+            <p class="page-subtitle">Give and view feedback</p>
+        </div>
+        <a href="{{ url_for('feedback.give') }}" class="btn btn-primary">Give feedback</a>
+    </div>
+</div>
+<div class="feedback-tabs reveal">
+    <div class="card">
+        <h2 class="card-title">Received</h2>
+        {% if received %}
+        <ul class="feedback-list feedback-list-cards">
+            {% for f in received %}
+            <li class="feedback-item feedback-card">
+                <div class="feedback-card-header">
+                    <span class="feedback-meta">From {{ f.sender.full_name if not f.is_anonymous else 'Anonymous' }}</span>
+                    <span class="text-relative" data-time="{{ f.created_at.isoformat() }}"><span class="time-relative">{{ f.created_at.strftime('%b %d, %Y') }}</span></span>
+                </div>
+                {% if f.rating %}
+                <span class="stars-inline feedback-stars" title="{{ f.rating }}/5">
+                    {% for i in [1,2,3,4,5] %}<span class="{% if i <= f.rating %}star-filled{% else %}star-empty{% endif %}">★</span>{% endfor %}
+                    <span class="feedback-rating-num">{{ f.rating }}/5</span>
+                </span>
+                {% endif %}
+                <div class="flex gap-2">
+                    <a href="{{ url_for('feedback.view', feedback_id=f.id) }}" class="btn btn-ghost btn-sm">View</a>
+                    {% if current_user.id == f.sender_id or current_user.is_admin() %}
+                    <form method="post" action="{{ url_for('feedback.delete', feedback_id=f.id) }}" style="display:inline;" data-confirm="Delete this feedback? This cannot be undone.">
+                        <button type="submit" class="btn btn-ghost btn-sm btn-danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">No feedback received yet.</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2 class="card-title">Sent</h2>
+        {% if sent %}
+        <ul class="feedback-list feedback-list-cards">
+            {% for f in sent %}
+            <li class="feedback-item feedback-card">
+                <div class="feedback-card-header">
+                    <span class="feedback-meta">To {{ f.recipient.full_name }}</span>
+                    <span class="text-relative" data-time="{{ f.created_at.isoformat() }}"><span class="time-relative">{{ f.created_at.strftime('%b %d, %Y') }}</span></span>
+                </div>
+                {% if f.rating %}<span class="feedback-rating-num">{{ f.rating }}/5</span>{% endif %}
+                <div class="flex gap-2">
+                    <a href="{{ url_for('feedback.view', feedback_id=f.id) }}" class="btn btn-ghost btn-sm">View</a>
+                    <form method="post" action="{{ url_for('feedback.delete', feedback_id=f.id) }}" style="display:inline;" data-confirm="Delete this feedback? This cannot be undone.">
+                        <button type="submit" class="btn btn-ghost btn-sm btn-danger">Delete</button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">You haven't sent any feedback yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.feedback-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.feedback-list { list-style: none; padding: 0; margin: 0; }
+.feedback-list-cards { display: flex; flex-direction: column; gap: 12px; }
+.feedback-card { padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--surface-border); background: var(--glass); display: flex; flex-direction: column; gap: 10px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.feedback-card:hover { border-color: var(--accent); box-shadow: 0 4px 12px var(--accent-soft); }
+.feedback-card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.feedback-meta { color: var(--text-muted); font-size: 0.9rem; }
+.feedback-stars { margin: 4px 0; }
+.feedback-rating-num { font-weight: 600; color: var(--accent); font-size: 0.9rem; }
+@media (max-width: 700px) { .feedback-tabs { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

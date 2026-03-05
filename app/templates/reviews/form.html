@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if review else 'New' }} Review{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">{{ 'Edit' if review else 'Create' }} review</h1>
+</div>
+<div class="form-page-center">
+    <div class="card reveal form-card-narrow">
+        <form method="post" action="{{ url_for('reviews.edit', review_id=review.id) if review else url_for('reviews.create') }}">
+            {% if not review %}
+            <div class="form-group">
+                <label for="user_id">Employee</label>
+                <select id="user_id" name="user_id" class="form-control" required>
+                    <option value="">Select employee</option>
+                    {% for u in reports %}
+                    <option value="{{ u.id }}">{{ u.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="period_start">Period start</label>
+                <input type="date" id="period_start" name="period_start" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="period_end">Period end</label>
+                <input type="date" id="period_end" name="period_end" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="summary">Summary</label>
+                <textarea id="summary" name="summary" class="form-control"></textarea>
+            </div>
+            {% else %}
+            <p><strong>Employee</strong> {{ review.user.full_name }}</p>
+            <p><strong>Period</strong> {{ review.period_start.strftime('%b %Y') }} – {{ review.period_end.strftime('%b %Y') }}</p>
+            <div class="form-group">
+                <label for="rating">Rating (1-5)</label>
+                <input type="number" id="rating" name="rating" class="form-control" min="1" max="5" value="{{ review.rating or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="summary">Summary</label>
+                <textarea id="summary" name="summary" class="form-control">{{ review.summary or '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="strengths">Strengths</label>
+                <textarea id="strengths" name="strengths" class="form-control">{{ review.strengths or '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="improvements">Areas for improvement</label>
+                <textarea id="improvements" name="improvements" class="form-control">{{ review.improvements or '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" class="form-control">
+                    <option value="draft" {% if review.status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="submitted" {% if review.status == 'submitted' %}selected{% endif %}>Submitted</option>
+                    <option value="completed" {% if review.status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            {% endif %}
+            <div class="flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{{ url_for('reviews.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

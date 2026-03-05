@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}New Manager{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">Create manager</h1>
+    <p class="page-subtitle">Only administrators can create new manager accounts.</p>
+</div>
+<div class="card reveal form-card-narrow">
+    <form method="post" action="{{ url_for('employees.create_manager') }}">
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-control" required autocomplete="email">
+        </div>
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" class="form-control" required autocomplete="username">
+        </div>
+        <div class="form-group">
+            <label for="first_name">First name</label>
+            <input type="text" id="first_name" name="first_name" class="form-control" required autocomplete="given-name">
+        </div>
+        <div class="form-group">
+            <label for="last_name">Last name</label>
+            <input type="text" id="last_name" name="last_name" class="form-control" required autocomplete="family-name">
+        </div>
+        <div class="form-group">
+            <label for="job_title">Job title</label>
+            <input type="text" id="job_title" name="job_title" class="form-control" placeholder="e.g. Engineering Manager">
+        </div>
+        <div class="form-group">
+            <label for="department_id">Department</label>
+            <select id="department_id" name="department_id" class="form-control" required>
+                <option value="">Select department</option>
+                {% for d in departments %}
+                <option value="{{ d.id }}">{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required minlength="8" autocomplete="new-password" placeholder="Minimum 8 characters">
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary">Create manager</button>
+            <a href="{{ url_for('employees.index') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

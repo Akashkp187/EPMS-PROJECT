@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Analytics</h1>
+            <p class="page-subtitle">Organization-wide performance insights. Filter by department or view overall.</p>
+        </div>
+        <form method="get" action="{{ url_for('analytics.index') }}" class="flex gap-2 align-center flex-wrap">
+            <select name="department" class="form-control" style="max-width:220px;" onchange="this.form.submit()">
+                <option value="">All departments</option>
+                {% for d in departments %}
+                <option value="{{ d.id }}" {% if selected_department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="period" value="{{ selected_period or 'year' }}">
+        </form>
+    </div>
+</div>
+<div class="analytics-stats reveal">
+    <div class="card stat-box">
+        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200" alt="" class="stat-box-img">
+        <span class="stat-box-value">{{ total_employees }}</span>
+        <span class="stat-box-label">Employees</span>
+    </div>
+    <div class="card stat-box">
+        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=200" alt="" class="stat-box-img">
+        <span class="stat-box-value">{{ total_goals }}</span>
+        <span class="stat-box-label">Total goals</span>
+    </div>
+    <div class="card stat-box">
+        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=200" alt="" class="stat-box-img">
+        <span class="stat-box-value">{{ completed_goals }}</span>
+        <span class="stat-box-label">Goals completed</span>
+    </div>
+    <div class="card stat-box">
+        <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200" alt="" class="stat-box-img">
+        <span class="stat-box-value">{{ reviews_count }}</span>
+        <span class="stat-box-label">Reviews</span>
+    </div>
+</div>
+<div class="card reveal">
+    <h2 class="card-title">Departments</h2>
+    <div class="dept-stats">
+        {% for d in departments %}
+        <div class="dept-stat-row">
+            <span>{{ d.name }}</span>
+            <span class="text-muted">{{ d.members.count() }} members</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="charts-grid reveal">
+    <!-- Employee Ranking -->
+    <div class="card chart-card">
+        <div class="chart-header">
+            <h3 class="card-title chart-title-with-formula" title="Formula: Average of review ratings (1–5) for each employee in the selected period. Top 5 employees by this average are shown.">Top Performing Employees <span class="formula-icon" aria-label="Show formula">ⓘ</span></h3>
+            <form method="get" action="{{ url_for('analytics.index') }}">
+                <input type="hidden" name="department" value="{{ selected_department_id or '' }}">
+                <select name="period" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="quarter" {% if selected_period == 'quarter' %}selected{% endif %}>Last quarter</option>
+                    <option value="year" {% if selected_period == 'year' or not selected_period %}selected{% endif %}>Last year</option>
+                    <option value="all" {% if selected_period == 'all' %}selected{% endif %}>All time</option>
+                </select>
+            </form>
+        </div>
+        <div class="chart-container">
+            <canvas id="employeeChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Department Performance -->
+    <div class="card chart-card">
+        <div class="chart-header">
+            <h3 class="card-title chart-title-with-formula" title="Formula: Average review rating (1–5) per department, considering only reviews whose period_end falls within the selected time window.">Department Performance <span class="formula-icon" aria-label="Show formula">ⓘ</span></h3>
+            <form method="get" action="{{ url_for('analytics.index') }}">
+                <input type="hidden" name="department" value="{{ selected_department_id or '' }}">
+                <select name="period" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="quarter" {% if selected_period == 'quarter' %}selected{% endif %}>Last quarter</option>
+                    <option value="year" {% if selected_period == 'year' or not selected_period %}selected{% endif %}>Last year</option>
+                    <option value="all" {% if selected_period == 'all' %}selected{% endif %}>All time</option>
+                </select>
+            </form>
+        </div>
+        <div class="chart-container">
+            <canvas id="deptChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Goal Completion Trends -->
+    <div class="card chart-card">
+        <div class="chart-header">
+            <h3 class="card-title chart-title-with-formula" title="Formula: Count of goals with status = 'completed', grouped by month (using goal.updated_at). Only completed goals in the selected period are counted per month.">Goal Completion Trends <span class="formula-icon" aria-label="Show formula">ⓘ</span></h3>
+            <form method="get" action="{{ url_for('analytics.index') }}">
+                <input type="hidden" name="department" value="{{ selected_department_id or '' }}">
+                <select name="period" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="quarter" {% if selected_period == 'quarter' %}selected{% endif %}>Last quarter</option>
+                    <option value="year" {% if selected_period == 'year' or not selected_period %}selected{% endif %}>Last year</option>
+                    <option value="all" {% if selected_period == 'all' %}selected{% endif %}>All time</option>
+                </select>
+            </form>
+        </div>
+        <div class="chart-container">
+            <canvas id="goalChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- KPI Trends -->
+    <div class="card chart-card">
+        <div class="chart-header">
+            <h3 class="card-title chart-title-with-formula" title="Formula: Average of (actual_value / target_value × 100) per period_end date, for all KPI targets in the selected period. Shows overall KPI achievement % over time.">KPI Achievement Over Time <span class="formula-icon" aria-label="Show formula">ⓘ</span></h3>
+            <form method="get" action="{{ url_for('analytics.index') }}">
+                <input type="hidden" name="department" value="{{ selected_department_id or '' }}">
+                <select name="period" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="quarter" {% if selected_period == 'quarter' %}selected{% endif %}>Last quarter</option>
+                    <option value="year" {% if selected_period == 'year' or not selected_period %}selected{% endif %}>Last year</option>
+                    <option value="all" {% if selected_period == 'all' %}selected{% endif %}>All time</option>
+                </select>
+            </form>
+        </div>
+        <div class="chart-container">
+            <canvas id="kpiChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Common Chart Options
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(200, 200, 200, 0.1)' },
+                ticks: { color: 'var(--text-muted)' }
+            },
+            x: {
+                grid: { display: false },
+                ticks: { color: 'var(--text-muted)' }
+            }
+        }
+    };
+
+    // 1. Employee Ranking (Horizontal Bar) – different color per bar
+    var empBarColors = ['rgba(14, 165, 233, 0.9)', 'rgba(16, 185, 129, 0.9)', 'rgba(139, 92, 246, 0.9)', 'rgba(245, 158, 11, 0.9)', 'rgba(236, 72, 153, 0.9)'];
+    var empColors = ({{ employee_labels | tojson | safe }}).map(function(_, i) { return empBarColors[i % empBarColors.length]; });
+    new Chart(document.getElementById('employeeChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ employee_labels | tojson | safe }},
+            datasets: [{
+                label: 'Avg Rating',
+                data: {{ employee_data | tojson | safe }},
+                backgroundColor: empColors,
+                borderRadius: 6,
+                barThickness: 24
+            }]
+        },
+        options: {
+            ...commonOptions,
+            indexAxis: 'y',
+            scales: {
+                x: { max: 5, beginAtZero: true }
+            }
+        }
+    });
+
+    // 2. Department Performance (Bar) – different color per bar
+    var deptBarColors = ['rgba(14, 165, 233, 0.9)', 'rgba(16, 185, 129, 0.9)', 'rgba(139, 92, 246, 0.9)', 'rgba(245, 158, 11, 0.9)', 'rgba(236, 72, 153, 0.9)', 'rgba(20, 184, 166, 0.9)', 'rgba(249, 115, 22, 0.9)'];
+    var deptColors = ({{ dept_labels | tojson | safe }}).map(function(_, i) { return deptBarColors[i % deptBarColors.length]; });
+    new Chart(document.getElementById('deptChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ dept_labels | tojson | safe }},
+            datasets: [{
+                label: 'Avg Dept Rating',
+                data: {{ dept_data | tojson | safe }},
+                backgroundColor: deptColors,
+                borderRadius: 6,
+                barThickness: 32
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                y: { max: 5, beginAtZero: true }
+            }
+        }
+    });
+
+    // 3. Goal Completion Trends (Line)
+    new Chart(document.getElementById('goalChart'), {
+        type: 'line',
+        data: {
+            labels: {{ goal_labels | tojson | safe }},
+            datasets: [{
+                label: 'Completed Goals',
+                data: {{ goal_data | tojson | safe }},
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4
+            }]
+        },
+        options: commonOptions
+    });
+
+    // 4. KPI Trends (Line)
+    new Chart(document.getElementById('kpiChart'), {
+        type: 'line',
+        data: {
+            labels: {{ kpi_labels | tojson | safe }},
+            datasets: [{
+                label: 'Avg Achievement %',
+                data: {{ kpi_data | tojson | safe }},
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: function(value) { return value + '%' } }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.analytics-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
+.stat-box { position: relative; overflow: hidden; text-align: center; padding: 24px; }
+.stat-box-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.12; }
+.stat-box-value { display: block; font-size: 2rem; font-weight: 700; color: var(--accent); position: relative; }
+.stat-box-label { font-size: 0.9rem; color: var(--text-muted); position: relative; }
+.dept-stats { display: flex; flex-direction: column; gap: 12px; }
+.dept-stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--surface-border); }
+
+/* Charts Grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 24px;
+}
+.chart-card {
+    padding: 20px;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+}
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.chart-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    min-height: 250px;
+}
+.chart-title-with-formula { cursor: help; display: inline-flex; align-items: center; gap: 6px; }
+.formula-icon { font-size: 0.85rem; opacity: 0.7; color: var(--accent); font-style: normal; }
+.chart-title-with-formula:hover .formula-icon { opacity: 1; }
+
+@media (max-width: 900px) { 
+    .analytics-stats { grid-template-columns: repeat(2, 1fr); } 
+    .charts-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 500px) { .analytics-stats { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

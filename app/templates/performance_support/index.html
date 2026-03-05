@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Performance Support{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Performance Support</h1>
+            <p class="page-subtitle">Employees who may benefit from additional 1:1 meetings and training. Schedule follow-ups by department.</p>
+        </div>
+        {% if departments|length > 1 %}
+        <form method="get" class="support-filter-form">
+            <label for="dept-select" class="sr-only">Department</label>
+            <select id="dept-select" name="department" class="form-control" onchange="this.form.submit()">
+                <option value="">All departments</option>
+                {% for d in departments %}
+                <option value="{{ d.id }}" {% if selected_department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="support-intro card reveal">
+    <p class="support-intro-text">The following employees are in the bottom of their department by recent performance score or below the support threshold. Schedule a 1:1 meeting and/or assign them to the <strong>Performance Improvement</strong> training to help them get back on track.</p>
+</div>
+
+<div class="support-grid reveal">
+    {% for dept, performers in dept_list %}
+    <section class="card support-card">
+        <h2 class="card-title support-dept-title">{{ dept.name }}</h2>
+        <p class="text-muted support-dept-sub">Low performers (need support)</p>
+        <div class="table-wrap">
+            <table class="support-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Score</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user, score in performers %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('employees.view', user_id=user.id) }}" class="support-user-link">
+                                {{ user.full_name }}
+                                <span class="support-role">({{ user.job_title or 'Employee' }})</span>
+                            </a>
+                        </td>
+                        <td><span class="support-score">{{ "%.0f"|format(score) }}/100</span></td>
+                        <td class="support-actions">
+                            <a href="{{ url_for('meetings.create') }}?employee_id={{ user.id }}" class="btn btn-secondary btn-sm">Schedule 1:1</a>
+                            <a href="{{ url_for('training.assign_user', user_id=user.id) }}" class="btn btn-ghost btn-sm">Assign training</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endfor %}
+</div>
+
+{% if not dept_list %}
+<p class="text-muted reveal">No low performers in the selected department(s), or you don't have any reports in that department.</p>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.support-filter-form { display: inline-flex; }
+.support-filter-form .form-control { min-width: 200px; }
+.support-intro { margin-bottom: 24px; padding: 16px 20px; }
+.support-intro-text { margin: 0; font-size: 0.95rem; color: var(--text); }
+.support-grid { display: flex; flex-direction: column; gap: 24px; }
+.support-card { padding: 20px; }
+.support-dept-title { margin-bottom: 4px; }
+.support-dept-sub { margin: 0 0 16px; font-size: 0.85rem; }
+.table-wrap { overflow-x: auto; }
+.support-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.support-table th, .support-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--surface-border); }
+.support-table th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+.support-user-link { color: var(--text); text-decoration: none; font-weight: 500; }
+.support-user-link:hover { color: var(--accent); }
+.support-role { color: var(--text-muted); font-weight: normal; font-size: 0.9em; }
+.support-score { color: var(--warning); font-weight: 500; }
+.support-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+</style>
+{% endblock %}

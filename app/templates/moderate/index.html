@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Moderate reviews &amp; feedback{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">Moderate reviews &amp; feedback</h1>
+    <p class="page-subtitle">As admin, you can delete any employee or manager review and feedback across the organization.</p>
+</div>
+
+<div class="moderate-grid reveal">
+    <section class="card">
+        <h2 class="card-title">All reviews</h2>
+        <p class="text-muted" style="margin:0 0 16px;">Delete a review to remove it permanently. Only admins can access this page.</p>
+        {% if reviews %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Reviewer</th>
+                        <th>Period</th>
+                        <th>Rating</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reviews %}
+                    <tr>
+                        <td>{{ r.user.full_name if r.user else '—' }}</td>
+                        <td>{{ r.reviewer.full_name if r.reviewer else '—' }}</td>
+                        <td>{{ r.period_start.strftime('%Y-%m-%d') if r.period_start else '—' }} → {{ r.period_end.strftime('%Y-%m-%d') if r.period_end else '—' }}</td>
+                        <td>{{ r.rating }}/5</td>
+                        <td><span class="badge badge-{{ r.status or 'draft' }}">{{ r.status or 'draft' }}</span></td>
+                        <td>
+                            <form method="post" action="{{ url_for('moderate.delete_review', review_id=r.id) }}" style="display:inline;" data-confirm="Permanently delete this review?">
+                                <button type="submit" class="btn btn-ghost btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No reviews yet.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2 class="card-title">All feedback</h2>
+        <p class="text-muted" style="margin:0 0 16px;">Delete feedback to remove it permanently.</p>
+        {% if feedback_list %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Recipient</th>
+                        <th>Sender</th>
+                        <th>Type</th>
+                        <th>Rating</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in feedback_list %}
+                    <tr>
+                        <td>{{ f.recipient.full_name if f.recipient else '—' }}</td>
+                        <td>{{ f.sender.full_name if f.sender else '—' }}{% if f.is_anonymous %} <span class="text-muted">(anonymous)</span>{% endif %}</td>
+                        <td>{{ f.feedback_type }}</td>
+                        <td>{{ f.rating }}/5</td>
+                        <td>
+                            <form method="post" action="{{ url_for('moderate.delete_feedback', feedback_id=f.id) }}" style="display:inline;" data-confirm="Permanently delete this feedback?">
+                                <button type="submit" class="btn btn-ghost btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No feedback yet.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.moderate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .moderate-grid { grid-template-columns: 1fr; } }
+.moderate-grid .table-wrap { overflow-x: auto; }
+.moderate-grid .table { font-size: 0.9rem; }
+</style>
+{% endblock %}

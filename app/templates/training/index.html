@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Training{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Training</h1>
+            <p class="page-subtitle">Browse and enroll in training programs</p>
+        </div>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('training.create') }}" class="btn btn-primary btn-sm">Add training</a>
+        {% endif %}
+    </div>
+</div>
+<div class="training-grid reveal">
+    {% for t in trainings %}
+    <div class="card training-card">
+        <div class="training-card-visual">
+            {% if t.image_url %}
+            <img src="{{ url_for('static', filename=t.image_url) }}" alt="{{ t.title }}">
+            {% else %}
+            {% set default_imgs = [
+                'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400',
+                'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400',
+                'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=400',
+                'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=400',
+                'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=400',
+                'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400',
+                'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400',
+                'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400'
+            ] %}
+            <img src="{{ default_imgs[(loop.index0 % default_imgs|length)] }}" alt="{{ t.title }}">
+            {% endif %}
+        </div>
+        <h3 class="card-title">{{ t.title }}</h3>
+        <p class="text-muted" style="margin:0 0 12px;">{{ t.description or 'No description' }}</p>
+        <p class="text-muted" style="font-size:0.9rem;">{{ t.provider or 'Internal' }} · {{ t.duration_hours or '?' }}h</p>
+        <p class="text-muted" style="font-size:0.9rem;">{{ t.start_date.strftime('%b %d') if t.start_date else 'TBD' }} – {{ t.end_date.strftime('%b %d') if t.end_date else 'TBD' }}</p>
+        {% set enrollment = my_enrollments.get(t.id) %}
+        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            {% if enrollment and enrollment.status != 'cancelled' %}
+                <span class="badge" style="background:var(--success);color:#fff;">Enrolled</span>
+                <form method="post" action="{{ url_for('training.cancel_enrollment', training_id=t.id) }}">
+                    <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ url_for('training.enroll', training_id=t.id) }}">
+                    <button type="submit" class="btn btn-primary btn-sm">Enroll</button>
+                </form>
+                {% if enrollment and enrollment.status == 'cancelled' %}
+                <span class="badge" style="background:var(--text-muted);color:#fff;">Cancelled</span>
+                {% endif %}
+            {% endif %}
+        </div>
+        <a href="{{ url_for('training.view', training_id=t.id) }}" class="btn btn-ghost btn-sm mt-1">View details</a>
+    </div>
+    {% endfor %}
+</div>
+{% if not trainings %}
+<p class="text-muted reveal">No training programs available.</p>
+{% endif %}
+{% endblock %}
+{% block extra_css %}
+<style>
+.training-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+.training-card { overflow: hidden; }
+.training-card-visual { height: 160px; margin: -24px -24px 16px -24px; overflow: hidden; }
+.training-card-visual img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+</style>
+{% endblock %}

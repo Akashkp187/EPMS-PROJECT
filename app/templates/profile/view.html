@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ user.full_name }}{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div class="flex align-center gap-3">
+            {% if user.id in overall_top_3_ids %}
+            <span class="avatar-overall-top-wrap avatar-lg-wrap rank-{{ overall_top_3_ids.index(user.id) + 1 }}">
+            {% endif %}
+            {% if user.avatar_url %}
+            <img src="{{ url_for('static', filename=user.avatar_url) }}" alt="" class="avatar-lg">
+            {% else %}
+            <span class="avatar-placeholder avatar-lg">{{ (user.first_name[0] + user.last_name[0])|upper }}</span>
+            {% endif %}
+            {% if user.id in overall_top_3_ids %}
+            </span>
+            {% endif %}
+            <div>
+                <h1 class="page-title" style="margin:0;">{{ user.full_name }}</h1>
+                <p class="page-subtitle" style="margin:0;">{{ user.job_title or 'Employee' }} - {{ user.department.name if user.department else '-' }}</p>
+            </div>
+        </div>
+        {% if current_user.id == user.id %}
+        <a href="{{ url_for('profile.edit') }}" class="btn btn-primary">Edit profile</a>
+        {% endif %}
+    </div>
+</div>
+<div class="profile-grid reveal">
+    {% if recognitions %}
+    <section class="card">
+        <h2 class="card-title">Badges &amp; recognition</h2>
+        <ul class="badges-list profile-badges">
+            {% for rec in recognitions %}
+            <li class="badge-item">
+                <span class="badge-pill badge-{{ rec.badge or 'default' }}">
+                    {% if rec.badge == 'top_performer' %}Top Performer{% elif rec.badge == 'high_performer' %}High Performer{% elif rec.badge == 'overall_top_performer' %}Organization Top Performer{% else %}{{ rec.badge or 'Recognition' }}{% endif %}
+                </span>
+                {% if rec.message %}<span class="badge-message text-muted">{{ rec.message[:60] }}{% if rec.message|length > 60 %}…{% endif %}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+    <section class="card">
+        <h2 class="card-title">Contact</h2>
+        <p><strong>Email</strong> {{ user.email }}</p>
+        <p><strong>Phone</strong> {{ user.phone or '-' }}</p>
+        <p><strong>Role</strong> {% if user.role == 'admin' %}Administrator{% elif user.role == 'manager' %}Manager{% else %}Employee{% endif %}</p>
+    </section>
+    <section class="card">
+        <h2 class="card-title">Goals</h2>
+        <a href="{{ url_for('goals.index', user_id=user.id) }}" class="btn btn-secondary btn-sm">View goals</a>
+    </section>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.avatar-lg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.avatar-placeholder.avatar-lg { width: 80px; height: 80px; font-size: 1.5rem; }
+.profile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.profile-badges .badges-list { list-style: none; padding: 0; margin: 0; }
+.profile-badges .badge-item { padding: 8px 0; border-bottom: 1px solid var(--surface-border); }
+.profile-badges .badge-item:last-child { border-bottom: none; }
+.profile-badges .badge-pill { display: inline-block; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; font-weight: 500; }
+.profile-badges .badge-top_performer { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+.profile-badges .badge-high_performer { background: rgba(14, 165, 233, 0.15); color: var(--accent); }
+.profile-badges .badge-overall_top_performer { background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(245, 158, 11, 0.2)); color: var(--warning); }
+.profile-badges .badge-message { font-size: 0.85rem; display: block; margin-top: 4px; }
+</style>
+{% endblock %}

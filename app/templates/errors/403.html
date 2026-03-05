@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Access denied{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">Access denied</h1>
+    <p class="page-subtitle">You don’t have permission to view this resource.</p>
+</div>
+<div class="card card-detail reveal">
+    <h2 class="card-title">403 – Forbidden</h2>
+    <p class="text-muted">
+        This page is restricted based on your MetricForge role. If you believe this is a mistake, contact your
+        administrator or try signing in with a different account.
+    </p>
+    <div class="mt-2">
+        <a href="{{ url_for('dashboard.home') }}" class="btn btn-primary">Back to dashboard</a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm">Sign in as another user</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Assign training for {{ target.full_name }}{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">Assign training</h1>
+    <p class="page-subtitle">Assign <strong>{{ target.full_name }}</strong> to a training program (e.g. Performance Improvement). They will receive a notification.</p>
+</div>
+<div class="form-page-center">
+    <div class="card reveal form-card-narrow">
+        <form method="post" action="{{ url_for('training.assign_user', user_id=target.id) }}">
+            <div class="form-group">
+                <label for="training_id">Training</label>
+                <select id="training_id" name="training_id" class="form-control" required>
+                    <option value="">Select training</option>
+                    {% for t in trainings %}
+                    <option value="{{ t.id }}">{{ t.title }}{% if t.provider %} ({{ t.provider }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Enroll {{ target.first_name }}</button>
+                <a href="{{ url_for('performance_support.index') }}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% if not trainings %}
+<p class="text-muted reveal">No scheduled or in-progress trainings available. <a href="{{ url_for('training.index') }}">View all trainings</a> or ask an admin to create a &quot;Performance Improvement&quot; program.</p>
+{% endif %}
+{% endblock %}

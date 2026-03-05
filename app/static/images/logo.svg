@@ -1,0 +1,30 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>
+    <linearGradient id="mf-tile" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#0c4a6e"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="mf-line" x1="10" y1="40" x2="38" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#7dd3fc"/>
+    </linearGradient>
+    <radialGradient id="mf-dot" cx="24" cy="10" r="5" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fef9c3"/>
+      <stop offset="50%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </radialGradient>
+    <filter id="mf-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.96 0 0 0 0 0.88 0 0 0 0 0.28 0 0 0 0 0.7 0" result="gold"/>
+      <feMerge><feMergeNode in="gold"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Soft tile -->
+  <rect class="mf-tile" x="2" y="2" width="44" height="44" rx="14" fill="url(#mf-tile)" fill-opacity="0.08" stroke="url(#mf-tile)" stroke-width="1.4" stroke-opacity="0.35"/>
+  <!-- Single peak curve (one stroke) -->
+  <path class="mf-peak-line" pathLength="1" d="M12 40 C12 24 24 6 24 6 C24 6 36 24 36 40" fill="none" stroke="url(#mf-line)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Peak accent -->
+  <circle class="mf-peak-dot" cx="24" cy="6" r="3.5" fill="url(#mf-dot)" filter="url(#mf-glow)"/>
+</svg>

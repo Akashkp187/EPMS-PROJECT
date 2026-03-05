@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Reviews{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Performance reviews</h1>
+            <p class="page-subtitle">View and manage performance reviews</p>
+        </div>
+        {% if current_user.is_manager() %}
+        <a href="{{ url_for('reviews.create') }}" class="btn btn-primary">New review</a>
+        {% endif %}
+    </div>
+</div>
+<div class="table-wrap reveal">
+    <table class="table table-interactive">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Period</th>
+                <th>Rating</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reviews %}
+            <tr class="table-row-clickable" data-href="{{ url_for('reviews.view', review_id=r.id) }}">
+                <td>
+                    <div class="flex align-center gap-2">
+                        {% if r.user.avatar_url %}
+                        <img src="{{ url_for('static', filename=r.user.avatar_url) }}" alt="" class="avatar-sm">
+                        {% else %}
+                        <span class="avatar-placeholder">{{ (r.user.first_name[0] + r.user.last_name[0])|upper }}</span>
+                        {% endif %}
+                        <span>{{ r.user.full_name }}</span>
+                    </div>
+                </td>
+                <td><span class="text-detail">{{ r.period_start.strftime('%b %Y') }} – {{ r.period_end.strftime('%b %Y') }}</span></td>
+                <td>
+                    {% if r.rating %}
+                    <span class="stars-inline" title="{{ r.rating }}/5" aria-label="Rating: {{ r.rating }} out of 5">
+                        {% for i in [1,2,3,4,5] %}<span class="{% if i <= r.rating %}star-filled{% else %}star-empty{% endif %}">★</span>{% endfor %}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge status-{{ r.status }}">{{ r.status }}</span></td>
+                <td>
+                    <a href="{{ url_for('reviews.view', review_id=r.id) }}" class="btn btn-ghost btn-sm">View</a>
+                    {% if current_user.id == r.reviewer_id %}
+                    <a href="{{ url_for('reviews.edit', review_id=r.id) }}" class="btn btn-ghost btn-sm">Edit</a>
+                    <form method="post" action="{{ url_for('reviews.delete', review_id=r.id) }}" style="display:inline;" data-confirm="Delete this review? This cannot be undone.">
+                        <button type="submit" class="btn btn-ghost btn-sm btn-danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if not reviews %}
+<p class="text-muted reveal">No reviews yet.</p>
+{% endif %}
+{% endblock %}
+{% block extra_css %}
+<style>
+.text-detail { font-size: 0.9rem; }
+.stars-inline { font-size: 1rem; }
+.badge.status-draft { background: var(--glass); color: var(--text-muted); }
+.badge.status-submitted { background: var(--accent-soft); color: var(--accent); }
+.badge.status-completed { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+</style>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.table-row-clickable').forEach(function(row) {
+    var href = row.getAttribute('data-href');
+    if (!href) return;
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', function(e) {
+        if (e.target.closest('a') || e.target.closest('button')) return;
+        window.location.href = href;
+    });
+});
+</script>
+{% endblock %}

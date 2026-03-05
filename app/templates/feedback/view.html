@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Feedback{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Feedback</h1>
+            <p class="page-subtitle">{{ feedback.created_at.strftime('%b %d, %Y') }}</p>
+        </div>
+        {% if feedback.sender_id == current_user.id or current_user.is_admin() %}
+        <form method="post" action="{{ url_for('feedback.delete', feedback_id=feedback.id) }}" data-confirm="Delete this feedback? This cannot be undone.">
+            <button type="submit" class="btn btn-secondary btn-danger btn-sm">Delete</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+<div class="card reveal">
+    <p><strong>From</strong> {{ feedback.sender.full_name if not feedback.is_anonymous else 'Anonymous' }}</p>
+    <p><strong>To</strong> {{ feedback.recipient.full_name }}</p>
+    <p><strong>Type</strong> {{ feedback.feedback_type }}</p>
+    {% if feedback.rating %}<p><strong>Rating</strong> {{ feedback.rating }}/5</p>{% endif %}
+    {% if feedback.comment %}
+    <h3 class="card-title">Comment</h3>
+    <p>{{ feedback.comment }}</p>
+    {% endif %}
+    <a href="{{ url_for('feedback.index') }}" class="btn btn-secondary btn-sm mt-2">Back to feedback</a>
+</div>
+{% endblock %}

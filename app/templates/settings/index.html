@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">Account and preferences</p>
+</div>
+<div class="card reveal" style="max-width: 480px;">
+    <h2 class="card-title">Change password</h2>
+    <form method="post" action="{{ url_for('settings.index') }}">
+        <input type="hidden" name="action" value="password">
+        <div class="form-group">
+            <label for="current_password">Current password</label>
+            <input type="password" id="current_password" name="current_password" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="new_password">New password</label>
+            <input type="password" id="new_password" name="new_password" class="form-control" required minlength="8">
+        </div>
+        <button type="submit" class="btn btn-primary">Update password</button>
+    </form>
+</div>
+<div class="card reveal mt-2" style="max-width: 480px;">
+    <h2 class="card-title">Theme</h2>
+    <p class="text-muted">Use the theme toggle in the header to switch between light and dark mode. Your choice is saved in the browser.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Employees{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Employees</h1>
+            <p class="page-subtitle">Browse and search team members</p>
+        </div>
+            <div class="flex gap-2 flex-wrap">
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('employees.create_manager') }}" class="btn btn-primary btn-sm">Add manager</a>
+                <a href="{{ url_for('employees.index') }}{% if not include_inactive %}?inactive=1{% endif %}" class="btn btn-ghost btn-sm">
+                    {% if include_inactive %}Show active only{% else %}Include deactivated{% endif %}
+                </a>
+                {% endif %}
+            </div>
+    </div>
+</div>
+<div class="toolbar reveal">
+    <form method="get" action="{{ url_for('employees.index') }}" class="search-form flex gap-2 align-center flex-wrap">
+        <input type="search" name="q" value="{{ q }}" class="form-control" style="max-width:280px;" placeholder="Search by name or email">
+        <select name="department" class="form-control" style="max-width:200px;">
+            <option value="">All departments</option>
+            {% for d in departments %}
+            <option value="{{ d.id }}" {% if dept_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+</div>
+<div class="table-wrap reveal">
+    <table class="table table-interactive">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Job title</th>
+                <th>Department</th>
+                <th>Role</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in pagination.items %}
+            <tr class="table-row-clickable" {% if current_user.can_manage_user(u) or current_user.id == u.id %}data-href="{{ url_for('employees.view', user_id=u.id) }}"{% endif %}>
+                <td>
+                    <div class="flex align-center gap-2">
+                        {% if u.id in overall_top_3_ids %}
+                        <span class="avatar-overall-top-wrap rank-{{ overall_top_3_ids.index(u.id) + 1 }}">
+                        {% endif %}
+                        {% if u.avatar_url %}
+                        <img src="{{ url_for('static', filename=u.avatar_url) }}" alt="" class="avatar-sm">
+                        {% else %}
+                        <span class="avatar-placeholder">{{ (u.first_name[0] + u.last_name[0])|upper }}</span>
+                        {% endif %}
+                        {% if u.id in overall_top_3_ids %}
+                        </span>
+                        {% endif %}
+                        <div>
+                            <strong>{{ u.full_name }}</strong>
+                            <br><span class="text-muted text-detail">{{ u.email }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="text-detail">{{ u.job_title or '—' }}</span></td>
+                <td>{{ u.department.name if u.department else '—' }}</td>
+                <td>
+                    <span class="badge badge-{{ u.role }}" data-tooltip="{% if u.role == 'admin' %}Full system access{% elif u.role == 'manager' %}Manages direct reports{% else %}Team member{% endif %}">{% if u.role == 'admin' %}Administrator{% elif u.role == 'manager' %}Manager{% else %}Employee{% endif %}</span>
+                    {% if not u.is_active %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+                </td>
+                <td class="employee-actions">
+                    {% if current_user.can_manage_user(u) or current_user.id == u.id %}
+                    <a href="{{ url_for('employees.view', user_id=u.id) }}" class="btn btn-ghost btn-sm">View</a>
+                    {% endif %}
+                    {% if current_user.can_manage_user(u) %}
+                    <a href="{{ url_for('employees.edit', user_id=u.id) }}" class="btn btn-ghost btn-sm">Edit</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if pagination.pages > 1 %}
+<nav class="pagination reveal">
+    {% if pagination.has_prev %}<a href="{{ url_for('employees.index', page=pagination.prev_num, q=q, department=dept_id) }}" class="btn btn-ghost btn-sm">Previous</a>{% endif %}
+    <span class="text-muted">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+    {% if pagination.has_next %}<a href="{{ url_for('employees.index', page=pagination.next_num, q=q, department=dept_id) }}" class="btn btn-ghost btn-sm">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}
+{% block extra_css %}
+<style>
+.toolbar { margin-bottom: 20px; }
+.badge { padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; }
+.badge-admin { background: var(--accent); color: #fff; }
+.badge-manager { background: var(--success); color: #fff; }
+.badge-employee { background: var(--glass); color: var(--text); }
+.badge-inactive { background: var(--text-muted); color: #fff; margin-left: 6px; }
+.employee-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.text-detail { font-size: 0.85rem; }
+.pagination { display: flex; align-items: center; gap: 16px; margin-top: 20px; }
+</style>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.table-row-clickable').forEach(function(row) {
+    var href = row.getAttribute('data-href');
+    if (!href) return;
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', function(e) {
+        if (e.target.closest('a') || e.target.closest('button')) return;
+        window.location.href = href;
+    });
+});
+</script>
+{% endblock %}

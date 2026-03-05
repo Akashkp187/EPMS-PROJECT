@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Edit profile{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <h1 class="page-title">Edit profile</h1>
+        <a href="{{ url_for('profile.view', user_id=user.id) }}" class="btn btn-ghost">Cancel</a>
+    </div>
+    <p class="page-subtitle">Update your photo and details</p>
+</div>
+<div class="card reveal" style="max-width: 560px;">
+    <form method="post" action="{{ url_for('profile.edit') }}" enctype="multipart/form-data" id="profile-form">
+        <div class="form-group avatar-upload-group">
+            <label>Profile picture</label>
+            <div class="avatar-upload-wrap">
+                <div class="avatar-preview avatar-preview-lg" id="avatar-preview">
+                    {% if user.avatar_url %}
+                    <img src="{{ url_for('static', filename=user.avatar_url) }}" alt="Your avatar" id="avatar-img">
+                    {% else %}
+                    <span class="avatar-placeholder avatar-xl" id="avatar-initials">{{ (user.first_name[0] + user.last_name[0])|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="avatar-upload-actions">
+                    <input type="file" name="avatar" id="avatar-input" accept="image/*" class="avatar-input-hidden">
+                    <label for="avatar-input" class="btn btn-secondary btn-sm">Upload photo</label>
+                    <span class="text-muted text-sm">PNG, JPG or GIF. Max 16MB.</span>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="first_name">First name</label>
+            <input type="text" id="first_name" name="first_name" class="form-control" required value="{{ user.first_name }}">
+        </div>
+        <div class="form-group">
+            <label for="last_name">Last name</label>
+            <input type="text" id="last_name" name="last_name" class="form-control" required value="{{ user.last_name }}">
+        </div>
+        <div class="form-group">
+            <label for="job_title">Job title</label>
+            <input type="text" id="job_title" name="job_title" class="form-control" value="{{ user.job_title or '' }}">
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" class="form-control" value="{{ user.phone or '' }}">
+        </div>
+        <div class="flex gap-2 mt-2">
+            <button type="submit" class="btn btn-primary">Save changes</button>
+            <a href="{{ url_for('profile.view', user_id=user.id) }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.avatar-upload-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.avatar-preview { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; background: var(--glass); border: 2px solid var(--surface-border); display: flex; align-items: center; justify-content: center; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.avatar-preview:hover { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-preview-lg { width: 120px; height: 120px; }
+.avatar-placeholder.avatar-xl { width: 100px; height: 100px; font-size: 2rem; }
+.avatar-preview-lg .avatar-placeholder.avatar-xl { width: 120px; height: 120px; font-size: 2.5rem; }
+.avatar-upload-actions { display: flex; flex-direction: column; gap: 8px; }
+.avatar-input-hidden { position: absolute; width: 0.1px; height: 0.1px; opacity: 0; overflow: hidden; z-index: -1; }
+.text-sm { font-size: 0.85rem; }
+</style>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('avatar-input').addEventListener('change', function(e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+        var preview = document.getElementById('avatar-preview');
+        var img = document.getElementById('avatar-img');
+        var initials = document.getElementById('avatar-initials');
+        if (img) {
+            img.src = reader.result;
+        } else {
+            if (initials) initials.remove();
+            var newImg = document.createElement('img');
+            newImg.id = 'avatar-img';
+            newImg.alt = 'Your avatar';
+            newImg.src = reader.result;
+            newImg.style.width = '100%'; newImg.style.height = '100%'; newImg.style.objectFit = 'cover';
+            preview.appendChild(newImg);
+        }
+    };
+    reader.readAsDataURL(f);
+});
+</script>
+{% endblock %}

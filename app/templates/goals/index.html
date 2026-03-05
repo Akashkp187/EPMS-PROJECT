@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Goals{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">Goals</h1>
+            <p class="page-subtitle">{% if target_user and target_user.id != current_user.id %}Goals for {{ target_user.full_name }}{% else %}Track and manage your performance goals{% endif %}</p>
+        </div>
+        {% if current_user.is_manager() %}
+        <a href="{{ url_for('goals.create', user_id=target_user_id) }}" class="btn btn-primary">Add goal</a>
+        {% endif %}
+    </div>
+</div>
+<div class="goals-list reveal">
+    {% for goal in goals %}
+    <div class="card goal-card goal-card-interactive">
+        <div class="goal-card-header">
+            <h3>
+                {% if current_user.is_manager() %}
+                <a href="{{ url_for('goals.edit', goal_id=goal.id) }}" class="goal-link">{{ goal.title }}</a>
+                {% else %}
+                <span class="goal-link">{{ goal.title }}</span>
+                {% endif %}
+            </h3>
+            <span class="badge badge-icon status-{{ goal.status }}" data-tooltip="Status: {{ goal.status }}">
+                {% if goal.status == 'completed' %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                {% elif goal.status == 'active' %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                {% else %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                {% endif %}
+                {{ goal.status }}
+            </span>
+        </div>
+        {% if goal.description %}<p class="goal-description text-muted">{{ goal.description }}</p>{% endif %}
+        <div class="goal-progress-wrap">
+            <div class="goal-progress-bar" role="progressbar" aria-valuenow="{{ goal.progress }}" aria-valuemin="0" aria-valuemax="100"><span class="goal-progress-fill" style="width: {{ goal.progress }}%;"></span></div>
+            <span class="goal-progress-value">{{ goal.progress }}%</span>
+        </div>
+        <div class="goal-footer">
+            {% if goal.target_date %}
+            <span class="goal-due-detail text-muted" data-due="{{ goal.target_date.isoformat() }}" title="Target date">
+                Due {{ goal.target_date.strftime('%b %d, %Y') }}
+                <span class="due-relative"></span>
+            </span>
+            {% else %}
+            <span class="text-muted">No due date</span>
+            {% endif %}
+            {% if current_user.is_manager() %}
+            <div class="goal-actions">
+                <a href="{{ url_for('goals.edit', goal_id=goal.id) }}" class="btn btn-ghost btn-sm">Edit</a>
+                <form method="post" action="{{ url_for('goals.delete', goal_id=goal.id) }}" style="display:inline;" data-confirm="Delete this goal? This cannot be undone.">
+                    <button type="submit" class="btn btn-ghost btn-sm btn-danger">Delete</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% if not goals %}
+<p class="text-muted reveal">
+    No goals yet.
+    {% if current_user.is_manager() %}
+    <a href="{{ url_for('goals.create', user_id=target_user_id) }}">Create your first goal</a>.
+    {% endif %}
+</p>
+{% endif %}
+{% endblock %}
+{% block extra_css %}
+<style>
+.goals-list { display: flex; flex-direction: column; gap: 16px; }
+.goal-card-interactive { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.goal-card-interactive:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.goal-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 12px; }
+.goal-link { color: var(--text); text-decoration: none; font-weight: 600; }
+.goal-link:hover { color: var(--accent); }
+.goal-description { margin: 0 0 12px; font-size: 0.95rem; line-height: 1.5; }
+.goal-progress-wrap { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.goal-progress-bar { flex: 1; height: 10px; background: var(--surface-border); border-radius: 5px; overflow: hidden; }
+.goal-progress-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); border-radius: 5px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.goal-progress-value { font-weight: 600; color: var(--accent); min-width: 40px; }
+.goal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--surface-border); flex-wrap: wrap; gap: 8px; }
+.goal-due-detail .due-in { color: var(--success); }
+.goal-due-detail .due-today { color: var(--warning); font-weight: 500; }
+.goal-due-detail .due-overdue { color: var(--error); font-weight: 500; }
+.goal-actions { display: flex; gap: 8px; }
+</style>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('[data-due]').forEach(function(el) {
+    var due = new Date(el.getAttribute('data-due'));
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    due.setHours(0,0,0,0);
+    var days = Math.round((due - today) / 86400000);
+    var span = el.querySelector('.due-relative');
+    if (!span) return;
+    if (days > 0) { span.textContent = '(' + days + ' days left)'; span.className = 'due-in'; }
+    else if (days === 0) { span.textContent = '(Today)'; span.className = 'due-today'; }
+    else { span.textContent = '(Overdue)'; span.className = 'due-overdue'; }
+});
+</script>
+{% endblock %}

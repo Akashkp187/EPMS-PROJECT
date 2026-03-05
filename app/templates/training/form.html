@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if training else 'New' }} Training{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <h1 class="page-title">{{ 'Edit' if training else 'Create' }} training</h1>
+    <p class="page-subtitle">Only admins can create and manage training programs.</p>
+</div>
+<div class="card reveal form-card-narrow">
+    <form method="post" action="{{ url_for('training.edit', training_id=training.id) if training else url_for('training.create') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="image">Cover image</label>
+            <input type="file" id="image" name="image" class="form-control" accept=".png,.jpg,.jpeg,.gif,.webp">
+            {% if training and training.image_url %}
+            <p class="text-muted" style="margin-top:8px;font-size:0.9rem;">Current: <img src="{{ url_for('static', filename=training.image_url) }}" alt="" style="max-height:60px;border-radius:8px;vertical-align:middle;"> Leave empty to keep.</p>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" class="form-control" required value="{{ training.title if training else '' }}">
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-control" rows="4">{{ training.description if training else '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="provider">Provider</label>
+            <input type="text" id="provider" name="provider" class="form-control" value="{{ training.provider if training else '' }}" placeholder="Internal, Udemy, Coursera, etc.">
+        </div>
+        <div class="form-group">
+            <label for="duration_hours">Duration (hours)</label>
+            <input type="number" step="0.5" min="0" id="duration_hours" name="duration_hours" class="form-control" value="{{ training.duration_hours if training and training.duration_hours is not none else '' }}">
+        </div>
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status" class="form-control">
+                {% set current_status = (training.status if training else 'scheduled') %}
+                <option value="scheduled" {% if current_status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In progress</option>
+                <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="start_date">Start date</label>
+            <input type="date" id="start_date" name="start_date" class="form-control" value="{{ training.start_date.isoformat() if training and training.start_date else '' }}">
+        </div>
+        <div class="form-group">
+            <label for="end_date">End date</label>
+            <input type="date" id="end_date" name="end_date" class="form-control" value="{{ training.end_date.isoformat() if training and training.end_date else '' }}">
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="{{ url_for('training.index') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

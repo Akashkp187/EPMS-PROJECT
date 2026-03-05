@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ training.title }}{% endblock %}
+{% block content %}
+<div class="page-header reveal">
+    <div class="flex justify-between align-center flex-wrap gap-2">
+        <div>
+            <h1 class="page-title">{{ training.title }}</h1>
+            <p class="page-subtitle">{{ training.provider or 'Internal' }} · {{ training.duration_hours or '?' }} hours</p>
+        </div>
+        <div class="flex gap-2">
+            {% if not enrollment or enrollment.status == 'cancelled' %}
+            <form method="post" action="{{ url_for('training.enroll', training_id=training.id) }}">
+                <button type="submit" class="btn btn-primary">Enroll</button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('training.cancel_enrollment', training_id=training.id) }}">
+                <button type="submit" class="btn btn-secondary">Cancel enrollment</button>
+            </form>
+            <span class="badge" style="background:var(--success);color:#fff;padding:8px 14px;">Enrolled</span>
+            {% endif %}
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('training.edit', training_id=training.id) }}" class="btn btn-ghost">Edit training</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="card reveal">
+    {% if training.image_url %}
+    <div class="training-view-visual" style="margin:-24px -24px 20px -24px; border-radius: var(--radius) var(--radius) 0 0; overflow:hidden;">
+        <img src="{{ url_for('static', filename=training.image_url) }}" alt="{{ training.title }}" style="width:100%; max-height:280px; object-fit:cover;">
+    </div>
+    {% endif %}
+    {% if training.description %}<p>{{ training.description }}</p>{% endif %}
+    <p><strong>Start</strong> {{ training.start_date.strftime('%b %d, %Y') if training.start_date else 'TBD' }}</p>
+    <p><strong>End</strong> {{ training.end_date.strftime('%b %d, %Y') if training.end_date else 'TBD' }}</p>
+    <p><strong>Status</strong> {{ training.status }}</p>
+    <a href="{{ url_for('training.index') }}" class="btn btn-secondary btn-sm mt-2">Back to training</a>
+</div>
+{% endblock %}
